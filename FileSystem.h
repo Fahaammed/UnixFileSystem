@@ -13,6 +13,19 @@ typedef struct {
 	Inode inode[126];
 } Super_block;
 
+typedef struct {
+	char name[5];        // Name of the file
+	uint8_t used_size;   // Inode state and the size of the file or directory
+	uint8_t start_block; // Index of the start file block
+	uint8_t dir_parent;  // Inode mode and the index of the parent inode
+}file;
+
+typedef struct {
+	char name[5];        // Name of the directory
+	uint8_t start_block; // Index of the start file block
+	uint8_t dir_parent;  // Inode mode and the index of the parent inode
+}directory;
+
 void fs_mount(char *new_disk_name);
 void fs_create(char name[5], int size);
 void fs_delete(char name[5]);
