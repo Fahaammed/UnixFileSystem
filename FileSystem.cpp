@@ -114,13 +114,14 @@ int main(int argc, char** argv){
             
         }
 
-        else if(string_input_list[0] == "B" && string_input_list.size() == 2){
+        else if(string_input_list[0] == "B" && string_input_list.size() > 1){
             if(diskSet == false){
                 cout << "Error: No file system is mounted" << endl;
             }
             else{
                 uint8_t buff[1024];
-                copy(string_input_list[1].begin(),string_input_list[1].end(),buff);
+                memset(buff, 0, 1024);
+                copy(input.begin()+input.find("B")+2,input.end(),buff);
                 fs_buff(buff);
             }
         }
@@ -162,7 +163,7 @@ int main(int argc, char** argv){
             }
             if(string_input_list[1].size() < 6 && diskSet == true){
                 char name[5];
-                strcpy(name,string_input_list[1].c_str() );
+                strcpy(name,string_input_list[1].c_str());
                 fs_cd(name);
                 // delete[] name;
             }
@@ -193,7 +194,7 @@ void fs_mount(char *new_disk_name){
         infile.read((char*)&(superBlock->inode[i].start_block),1);
         infile.read((char*)&(superBlock->inode[i].dir_parent),1);
     }
-
+    currentDir = 127;
 }
 
 
@@ -213,10 +214,16 @@ void fs_write(char name[5], int block_num){
     cout << "inside fs write, filename: "<< name << ",   block number: " << block_num << endl;
     return;
 }
+
+
 void fs_buff(uint8_t buff[1024]){
-    cout << "inside fs buff, filename: "<< buff << endl;
+    cout << "inside fs buff, buff before: " << (char *)buff << endl;
+    memset(buffer, 0, 1024);
+    memcpy(buffer, buff, 1024);
+    cout << "inside fs buff, buffer after: " << (char *)buffer << endl;
     return;
 }
+
 
 void fs_ls(void){
     cout << "inside fs ls " << endl;
@@ -235,6 +242,38 @@ void fs_defrag(void){
 
 void fs_cd(char name[5]){
     cout << "inside fs cd, filename: " << name << endl;
+    if(strcmp(name, ".") == 0){                                        // do nothing
+        return;
+    }
+    
+    if(strcmp(name, "..") == 0){                                       // got one directory back of the current directory only 
+        if(currentDir != 127){                                                    // if the current directory is not root
+            uint8_t tempIndex = superBlock->inode[currentDir].dir_parent;
+            currentDir = tempIndex << 1;
+            currentDir = currentDir >> 1;
+            return;
+        }
+            
+    }
+    int index = -1;                                                             // if an actual dir name is given then go into that dir
+    for (int i = 0;i<126; i++){
+        if(strncmp(name,superBlock->inode[i].name,5)){
+            uint8_t tempIndex = superBlock->inode[i].dir_parent;
+            int isDir = tempIndex >> 7;
+            tempIndex = tempIndex << 1;
+            tempIndex = tempIndex >> 1;
+            if((isDir == 1) && (tempIndex == currentDir)){
+                index = i;
+            }
+        }
+    }
+    if(index >= 0){
+        currentDir = index;
+    }
+    else{
+        cout << "Error: Directory" << name << " does not exist" << endl;
+    }
+    return;
 }
 
 
@@ -479,5 +518,29 @@ bool fs_mountCheck(char *new_disk_name){
         }
     }
     return true;
+
+}
+int findBlock(int requiredSize){
+    int freeIndex = 0;
+    int foundindex = -1;
+    for (int i = 0; i < 16; i++){                                                           // creating the map of position value pairs
+        uint8_t tempByte = superBlock->free_block_list[i];
+        uint8_t mask = 0x80U;
+        for(int j=0; j < 8; j++){
+            if(mask & tempByte){
+                freeIndex = 0;
+            }
+            else{
+                freeIndex++;
+            }
+            if(freeIndex > requiredSize){
+                foundindex = (i*8)+j;
+                foundindex -= requiredSize;
+                return foundindex;
+            }
+            mask = mask >> 1;
+        }  
+    }
+    return foundindex;
 
 }
