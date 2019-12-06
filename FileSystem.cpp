@@ -276,9 +276,14 @@ void fs_create(char name[5], int size){
     }
     return;
 }
+void createDirArray(){
+    uint8_t directoryArray []
+
+}
 
 
 void fs_delete(char name[5]){
+    createmap();
     return;
     cout << "inside fs delete, filename: "<< name << endl;
     int index = -1;                                                             // if an actual dir name is given then go into that dir
@@ -338,6 +343,24 @@ void fs_delete(char name[5]){
 
 void fs_read(char name[5], int block_num){
     cout << "inside fs read, filename: "<< name << ",    block number: " << block_num << endl;
+
+    string name_str(name);
+    uint8_t block;
+    for (int i = 0;i<126;i++){
+        string inode_name(SuperBlock.inode[i].name);
+        //add a check for current directory. Check parent directory. make parent dir global
+        if (inode_name == name_str){// && SuperBlock->inode[i].dir_parent == current dir
+            block = SuperBlock.inode[i].start_block;
+            int position = block + block_num;
+            if (position <= (block + (SuperBlock.inode[i].used_size & 127))){
+                infile.seekg(position*1024,ios::beg);
+                infile.read(blockBuffer,1024);
+            }else{
+                printf("Error: <file name> does not have block <block_num>");
+            }
+        }
+    }
+    printf("Error: File <file name> does not exist");
     return;
 }
 void fs_write(char name[5], int block_num){
