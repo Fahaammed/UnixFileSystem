@@ -210,8 +210,9 @@ void fs_create(char name[5], int size){
         uint8_t parentDir = superBlock.inode[i].dir_parent;
         parentDir = parentDir << 1;
         parentDir = parentDir >> 1;
-        if(currentDir == parentDir){
-            if(strncmp(name,superBlock.inode[i].name,5)){
+        if(currentDir == parentDir){ 
+            string inodeName = superBlock.inode[i].name;
+            if(!inodeName.compare(name)){
                 cout<< "Error: File or directory "<< name << " already exists" << endl;
                 return;
             }        
@@ -222,8 +223,10 @@ void fs_create(char name[5], int size){
     for(int i =0; i<126; i++){
         if(superBlock.inode[i].used_size == 0){
             inodeIndex = i;
+            break;
         }
     }
+    cout << "inode index: " << inodeIndex << endl;
     if(inodeIndex == -1){                                                                                   // no inode is free
         cout << "Error: Superblock in disk "<< diskName << " is full, cannot create "<< name << endl;
         return;
@@ -260,7 +263,11 @@ void fs_create(char name[5], int size){
         superBlock.inode[inodeIndex].used_size |= (uint8_t)0x80U;                                                      // in use = 1
         superBlock.inode[inodeIndex].dir_parent = currentDir;
         superBlock.inode[inodeIndex].start_block = (uint8_t)freeListIndex+1;
-        cout << "before bitset" << endl;
+
+        cout << "name " << (char *)superBlock.inode[inodeIndex].name << endl;
+        cout << "used_size " << unsigned(superBlock.inode[inodeIndex].used_size) << endl;        
+        cout << "start Block " << unsigned(superBlock.inode[inodeIndex].start_block) << endl;
+        cout << "dirparent " << unsigned(superBlock.inode[inodeIndex].dir_parent) << endl;
 
         for(int i = freeListIndex+1; i < freeListIndex+1+size; i++){
             int byte_index = i / 8;
@@ -276,14 +283,10 @@ void fs_create(char name[5], int size){
     }
     return;
 }
-void createDirArray(){
-    uint8_t directoryArray []
-
-}
 
 
 void fs_delete(char name[5]){
-    createmap();
+    // createmap();
     return;
     cout << "inside fs delete, filename: "<< name << endl;
     int index = -1;                                                             // if an actual dir name is given then go into that dir
@@ -344,23 +347,23 @@ void fs_delete(char name[5]){
 void fs_read(char name[5], int block_num){
     cout << "inside fs read, filename: "<< name << ",    block number: " << block_num << endl;
 
-    string name_str(name);
-    uint8_t block;
-    for (int i = 0;i<126;i++){
-        string inode_name(SuperBlock.inode[i].name);
-        //add a check for current directory. Check parent directory. make parent dir global
-        if (inode_name == name_str){// && SuperBlock->inode[i].dir_parent == current dir
-            block = SuperBlock.inode[i].start_block;
-            int position = block + block_num;
-            if (position <= (block + (SuperBlock.inode[i].used_size & 127))){
-                infile.seekg(position*1024,ios::beg);
-                infile.read(blockBuffer,1024);
-            }else{
-                printf("Error: <file name> does not have block <block_num>");
-            }
-        }
-    }
-    printf("Error: File <file name> does not exist");
+    // string name_str(name);
+    // uint8_t block;
+    // for (int i = 0;i<126;i++){
+    //     string inode_name(SuperBlock.inode[i].name);
+    //     //add a check for current directory. Check parent directory. make parent dir global
+    //     if (inode_name == name_str){// && SuperBlock->inode[i].dir_parent == current dir
+    //         block = SuperBlock.inode[i].start_block;
+    //         int position = block + block_num;
+    //         if (position <= (block + (SuperBlock.inode[i].used_size & 127))){
+    //             infile.seekg(position*1024,ios::beg);
+    //             infile.read(blockBuffer,1024);
+    //         }else{
+    //             printf("Error: <file name> does not have block <block_num>");
+    //         }
+    //     }
+    // }
+    // printf("Error: File <file name> does not exist");
     return;
 }
 void fs_write(char name[5], int block_num){
@@ -438,7 +441,12 @@ void changeDisk(){
         infile.write((char *)& superBlock.inode[i].used_size, 1);
         infile.write((char *)& superBlock.inode[i].start_block,1);
         infile.write((char *)& superBlock.inode[i].dir_parent,1);
+        // cout << "name " << (char *)superBlock.inode[i].name << endl;
+        // cout << "used_size " << unsigned(superBlock.inode[i].used_size) << endl;        
+        // cout << "start Block " << unsigned(superBlock.inode[i].start_block) << endl;
+        // cout << "dirparent " << unsigned(superBlock.inode[i].dir_parent) << endl;
     }
+    
 }
 
 
