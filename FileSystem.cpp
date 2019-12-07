@@ -1,74 +1,47 @@
 #include "FileSystem.h"
-#include <fcntl.h>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <cstring>
-#include <unistd.h>
-#include <string.h>
-#include <map>
-#include <set> 
-#include <fstream>
-#include <bitset>
+
 
 using namespace std;
 
-void fs_mount(char *new_disk_name);
-bool fs_mountCheck(char *new_disk_name);
-void fs_create(char name[5], int size);
-void fs_delete(char name[5]);
-void fs_read(char name[5], int block_num);
-void fs_write(char name[5], int block_num);
-void fs_buff(uint8_t buff[1024]);
-void fs_ls(void);
-void fs_resize(char name[5], int new_size);
-void fs_defrag(void);
-int findBit(uint8_t byteFlag, int whichBit);
-int findBlock(int requiredSize);
-void fs_cd(char name[5]);
-string convertToString(char* a, int size);
-vector<string> tokenize(const string &str, const char *delim);
-bool fexists(const char *filename);
-void changeDisk();
 Super_block superBlock;
 string diskName;
-bool diskSet;
+bool diskSet = false;
 uint8_t buffer[1024];
 uint8_t currentDir;
 fstream infile;
-
 
 
 int main(int argc, char** argv){
     string filename = argv[1];
     fstream fp(filename);
     string input;
-    int whileloop = 1;
+    int whileloop = 0;
     diskSet = false;
     while(getline(fp,input)){
+        whileloop++;
         vector<string> string_input_list;
         string_input_list = tokenize(input, " ");
     
         
-    // mounting a disk
+    // mounting a disk if the conditions meet
         if(string_input_list[0] == "M" && string_input_list.size() == 2){
             char *convert = new char[string_input_list[1].size() + 1];
             copy(string_input_list[1].begin(),string_input_list[1].end(),convert);
             convert[string_input_list[1].size()] = '\0';
-            if(fs_mountCheck(convert)){
-                diskSet = true;
+            if(fs_mountCheck(convert)){                                                                                 // Do the consistency check for the mount
+                diskSet = true;                                                                                         // if the consistency passed then set disk
                 diskName = convert;
-                fs_mount(convert);
+                fs_mount(convert);                                                                                      // call mount
             }
             delete[] convert;
         }
 
 
-        else if(string_input_list[0] == "C" && string_input_list.size() == 3){
+        else if(string_input_list[0] == "C" && string_input_list.size() == 3){                                          // if matches with create and the conditions meet call fs_create
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
-            if(string_input_list[1].size() < 6 && diskSet == true){
+            if(string_input_list[1].size() < 6 && diskSet == true && diskSet){
                 char name[5];
                 strcpy(name,string_input_list[1].c_str() );
                 int size = stoi(string_input_list[2]);
@@ -80,11 +53,11 @@ int main(int argc, char** argv){
         }
 
 
-        else if(string_input_list[0] == "D" && string_input_list.size() == 2){
+        else if(string_input_list[0] == "D" && string_input_list.size() == 2){                                          // if matches with delete and the conditions meet call fs_delete
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
-            if(string_input_list[1].size() < 6 && diskSet == true){
+            if(string_input_list[1].size() < 6 && diskSet){
                 char name[5];
                 strcpy(name,string_input_list[1].c_str() );
                 fs_delete(name);
@@ -92,9 +65,9 @@ int main(int argc, char** argv){
             }
         }
 
-        else if(string_input_list[0] == "R" && string_input_list.size() == 3){
+        else if(string_input_list[0] == "R" && string_input_list.size() == 3){                                          // if matches with read and the conditions meet call fs_read
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             if(string_input_list[1].size() < 6 && diskSet == true){
                 char name[5];
@@ -105,9 +78,9 @@ int main(int argc, char** argv){
             }
         }
 
-        else if(string_input_list[0] == "W" && string_input_list.size() == 3){
+        else if(string_input_list[0] == "W" && string_input_list.size() == 3){                                          // if matches with write and the conditions meet call fs_write
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             if(string_input_list[1].size() < 6 && diskSet == true){
                 char name[5];
@@ -119,9 +92,9 @@ int main(int argc, char** argv){
             
         }
 
-        else if(string_input_list[0] == "B" && string_input_list.size() > 1){
+        else if(string_input_list[0] == "B" && string_input_list.size() > 1){                                           // if matches with buff and the conditions meet call fs_buff
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             else{
                 uint8_t buff[1024];
@@ -131,18 +104,18 @@ int main(int argc, char** argv){
             }
         }
 
-        else if(string_input_list[0] == "L" && string_input_list.size() == 1){
+        else if(string_input_list[0] == "L" && string_input_list.size() == 1){                                          // if matches with ls and the conditions meet call fs_ls
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             else{
                 fs_ls();
             }
         }
 
-        else if(string_input_list[0] == "E" && string_input_list.size() == 3){
+        else if(string_input_list[0] == "E" && string_input_list.size() == 3){                                          // if matches with resize and the conditions meet call fs_resize
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             if(string_input_list[1].size() < 6 && diskSet == true){
                 char name[5];
@@ -153,18 +126,18 @@ int main(int argc, char** argv){
             }
         }
 
-        else if(string_input_list[0] == "O" && string_input_list.size() == 1){
+        else if(string_input_list[0] == "O" && string_input_list.size() == 1){                                          // if matches with defrag and the conditions meet call fs_defrag
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             else{
                 fs_defrag();
             }
         }
 
-        else if(string_input_list[0] == "Y" && string_input_list.size() == 2){
+        else if(string_input_list[0] == "Y" && string_input_list.size() == 2){                                          // if matches with cd and the conditions meet call fs_cd
             if(diskSet == false){
-                cout << "Error: No file system is mounted" << endl;
+                cerr << "Error: No file system is mounted" << endl;
             }
             if(string_input_list[1].size() < 6 && diskSet == true){
                 char name[5];
@@ -175,20 +148,19 @@ int main(int argc, char** argv){
         }
 
         else{
-            cout << "Command Error: " << endl;
+            cerr << "Command Error: " << filename <<" ,"<< whileloop << endl;                                           // otherwise command is wrong
         }
-        whileloop++;
     }
     return 0;
 }
 
 
-void fs_mount(char *new_disk_name){
-    cout <<"Disk name: "<< new_disk_name << endl;
+void fs_mount(char *new_disk_name){                                                                                     // mounts the disk to the superBlock structure
+    cerr <<"Disk name: "<< new_disk_name << endl;
     
     infile.open(new_disk_name);
     if(infile.fail()){
-        cout << "infile error" << endl;
+        cerr << "infile error" << endl;
     }
 
     // superBlock = new Super_block;
@@ -199,77 +171,63 @@ void fs_mount(char *new_disk_name){
         infile.read((char*)&superBlock.inode[i].start_block,1);
         infile.read((char*)&superBlock.inode[i].dir_parent,1);
     }
-    currentDir = 127;
+    currentDir = 127;                                                                                                   // set the current directory to 127 which is root
+    return;
 }
 
 
 
 void fs_create(char name[5], int size){
-    cout << "inside fs create, filename: "<< name << ",  file size: " << size << endl;
-    for(int i =0; i < 126; i++){
-        uint8_t parentDir = superBlock.inode[i].dir_parent;
+    for(int i =0; i < 126; i++){                                                                                        // go through all the inodes and if the name given matches and is in the same directory
+        uint8_t parentDir = superBlock.inode[i].dir_parent;                                                             // then throw the error and return
         parentDir = parentDir << 1;
         parentDir = parentDir >> 1;
         if(currentDir == parentDir){ 
             string inodeName = superBlock.inode[i].name;
+            inodeName = inodeName.substr(0,5);
             if(!inodeName.compare(name)){
-                cout<< "Error: File or directory "<< name << " already exists" << endl;
+                cerr<< "Error: File or directory "<< name << " already exists" << endl;
                 return;
             }        
         }    
     }
     
-    int inodeIndex = -1;
+    int inodeIndex = -1;                                                                                                // find an unused inode and get it's index
     for(int i =0; i<126; i++){
         if(superBlock.inode[i].used_size == 0){
             inodeIndex = i;
             break;
         }
     }
-    cout << "inode index: " << inodeIndex << endl;
-    if(inodeIndex == -1){                                                                                   // no inode is free
-        cout << "Error: Superblock in disk "<< diskName << " is full, cannot create "<< name << endl;
+    if(inodeIndex == -1){                                                                                               // if no inode is free then throw an error
+        cerr << "Error: Superblock in disk "<< diskName << " is full, cannot create "<< name << endl;
         return;
     }
 
 
-    if(size == 0){
+    if(size == 0){                                                                                                       // we need to make a directory
         
         strncpy( superBlock.inode[inodeIndex].name, name, 5);
         superBlock.inode[inodeIndex].used_size |= (uint8_t)0x80U; // in use = 1
         superBlock.inode[inodeIndex].dir_parent |= (uint8_t)0x80U; // is dir = 1
-        superBlock.inode[inodeIndex].dir_parent |= currentDir;
-        
+        superBlock.inode[inodeIndex].dir_parent |= currentDir;                                                            // call changeDisk to write to the actual disk
         changeDisk();
-        // uint8_t inodeBuffer[8];
-        // memset(inodeBuffer, 0, 8);
-        // memcpy(inodeBuffer,(char *) & superBlock->inode[inodeIndex],8);
-        
-
-
     }
-    else if(size > 0 && size < 128){
+    else if(size > 0 && size < 128){                                                                                      // if it is a file find the index of contaguous blocks
         int freeListIndex = findBlock(size);
         if(freeListIndex < 0){
-            cout << "Error: Cannot allocate "<< size << " on " << diskName << endl;
+            cerr << "Error: Cannot allocate "<< size << " on " << diskName << endl;                                        // if not enough space left then throw an error 
         return;
         }
-        for(int i = 0; i < 5; i++){
+        for(int i = 0; i < 5; i++){                                                                                         // write the name to the superBlock
             superBlock.inode[inodeIndex].name[i] = name[i];
-            cout<< superBlock.inode[inodeIndex].name[i]<< endl;
+            cerr << superBlock.inode[inodeIndex].name[i]<< endl;
         }
-        // strncpy(name, superBlock->inode[inodeIndex].name, 5);                                                           // set the name
-        superBlock.inode[inodeIndex].used_size = (uint8_t)size;                                              // set the startBlock
-        superBlock.inode[inodeIndex].used_size |= (uint8_t)0x80U;                                                      // in use = 1
-        superBlock.inode[inodeIndex].dir_parent = currentDir;
-        superBlock.inode[inodeIndex].start_block = (uint8_t)freeListIndex+1;
-
-        cout << "name " << (char *)superBlock.inode[inodeIndex].name << endl;
-        cout << "used_size " << unsigned(superBlock.inode[inodeIndex].used_size) << endl;        
-        cout << "start Block " << unsigned(superBlock.inode[inodeIndex].start_block) << endl;
-        cout << "dirparent " << unsigned(superBlock.inode[inodeIndex].dir_parent) << endl;
-
-        for(int i = freeListIndex+1; i < freeListIndex+1+size; i++){
+        superBlock.inode[inodeIndex].used_size = (uint8_t)size;                                                          // set the size
+        superBlock.inode[inodeIndex].used_size |= (uint8_t)0x80U;                                                       // set in use = 1
+        superBlock.inode[inodeIndex].dir_parent = currentDir;                                                            // set the parent directory   
+        superBlock.inode[inodeIndex].start_block = (uint8_t)freeListIndex+1;                                            // set the start block
+        for(int i = freeListIndex+1; i < freeListIndex+1+size; i++){                                                    // flip the bits in the free_space list in the superBlock according to the index and size
             int byte_index = i / 8;
             int bit = i % 8;
             uint8_t byte = superBlock.free_block_list[byte_index];
@@ -279,104 +237,134 @@ void fs_create(char name[5], int size){
             superBlock.free_block_list[byte_index] = new_byte;
         }
         
-    changeDisk();
+    changeDisk();                                                                                                        // write the changes to the disk
     }
     return;
 }
 
 
 void fs_delete(char name[5]){
-    // createmap();
-    return;
-    cout << "inside fs delete, filename: "<< name << endl;
-    int index = -1;                                                             // if an actual dir name is given then go into that dir
-    for (int i = 0;i<126; i++){
-        if(strncmp(name,superBlock.inode[i].name,5)){
-            uint8_t tempIndex = superBlock.inode[i].dir_parent;
-            int isDir = tempIndex >> 7;
-            tempIndex = tempIndex << 1;
-            tempIndex = tempIndex >> 1;
-            if((isDir == 0) && (tempIndex == currentDir)){                      // it's a file
-                // delete that file and re write it's datablocks to 0, flip the bits in free blocklis and then return 
-                index = i;
-            }
-            if((isDir == 1) && (tempIndex == currentDir)){                      // set the index to i and break out of the loop
+    int index = -1;                                                                                             
+    for(int i =0; i < 126; i++){                                                                                            // go through all the inodes and file the inode with this name and same parent directory
+        uint8_t parentDir = superBlock.inode[i].dir_parent;
+        parentDir = parentDir << 1;
+        parentDir = parentDir >> 1;
+        if(currentDir == parentDir){ 
+            string inodeName = superBlock.inode[i].name;
+            inodeName = inodeName.substr(0,5);
+            if(!inodeName.compare(name)){
                 index = i;
                 break;
-            }                       
+            }        
+        }    
+    }
+
+    if(index < 0){                                                                                                          // if not found throw an error
+        cerr << "Error: File or directory " << name << " does not exist" << endl;
+    }
+
+    uint8_t isDir = superBlock.inode[index].dir_parent;                                                                     // check to see if it is a directory
+    isDir = isDir >> 7;
+    
+    if(isDir == 1){                                                                                                         // if it is a directory then recursively call fs_delete on it's children
+        vector<int> childNodes = fileDirectory(index);
+        for(uint8_t i = 0; i < childNodes.size(); i++){
+            fs_delete(superBlock.inode[childNodes[i]].name);
         }
     }
-
-    if(index < 0){
-        cout << "Error: File or directory " << name << " does not exist" << endl;
-    }
-    // else{
-    //     vector<file> files;
-    //     vector<directory> directories;
-    //     char currentParent[5];
-    //     strncpy(superBlock.inode[index].name,currentParent,5);
-    //     for (int i=0; i<126; i++){
-    //         uint8_t parentDir = superBlock->inode[i].dir_parent;
-    //         parentDir = parentDir << 1;
-    //         parentDir = parentDir >> 1;
-    //         char parentName[5];
-    //         strncpy(superBlock.inode[parentDir].name,parentName,5);
-    //         if(strncmp(parentDir,currentParent)){
-    //             uint8_t tempIndex = superBlock->inode[i].dir_parent;
-    //             int isDir = tempIndex >> 7;
-    //             if(isDir == 0){
-
-    //             }
-    //         }
-    //     }
-
-
-
-    // }
-
-
-
-
-
-
-
+    deleteInode(index);                                                                                                     // call deleteInode to clear out the inode and associated things
     return;
 }
 
 
 void fs_read(char name[5], int block_num){
-    cout << "inside fs read, filename: "<< name << ",    block number: " << block_num << endl;
-
-    // string name_str(name);
-    // uint8_t block;
-    // for (int i = 0;i<126;i++){
-    //     string inode_name(SuperBlock.inode[i].name);
-    //     //add a check for current directory. Check parent directory. make parent dir global
-    //     if (inode_name == name_str){// && SuperBlock->inode[i].dir_parent == current dir
-    //         block = SuperBlock.inode[i].start_block;
-    //         int position = block + block_num;
-    //         if (position <= (block + (SuperBlock.inode[i].used_size & 127))){
-    //             infile.seekg(position*1024,ios::beg);
-    //             infile.read(blockBuffer,1024);
-    //         }else{
-    //             printf("Error: <file name> does not have block <block_num>");
-    //         }
-    //     }
-    // }
-    // printf("Error: File <file name> does not exist");
+    for(uint8_t i =0; i < 126; i++){
+        uint8_t parentDir = superBlock.inode[i].dir_parent;
+        parentDir = parentDir << 1;                             
+        parentDir = parentDir >> 1;
+        if(currentDir == parentDir){ 
+            string inodeName = superBlock.inode[i].name;
+            inodeName = inodeName.substr(0,5);
+            uint8_t inUse = superBlock.inode[i].used_size;
+            inUse = inUse >> 7;
+            if(!inodeName.compare(name)){                                                                                   // finds the inode with the same name and same directory
+                uint8_t size = superBlock.inode[i].used_size;
+                size = size << 1;
+                size = size >> 1;
+                if(block_num > size){                                                                                       // if block num is greater than size throw error
+                    cerr << "Error: "<< name <<" does not have block " << block_num << endl;
+                    return;
+                }
+                if(inUse != 0){                                                                                             // if file not found
+                    cerr << "Error: File " << name << " does not exist" << endl;    
+                    return;
+                }
+                uint8_t startBlock = superBlock.inode[i].start_block;
+                int readBlock = startBlock + block_num;                                                                     // if all conditions met then read from the disk and copy it into buffer 
+                if(readBlock < 129){
+                    infile.seekg(readBlock*1024,ios::beg);
+                    char tempbuff[1024];
+                    memset(tempbuff,0,1024);
+                    infile.read(tempbuff,1024);
+                    memset(buffer,0,1024);
+                    memcpy(buffer, tempbuff,1024);
+                }
+            }
+            else {
+                cerr << "Error: File " << name << " does not exist" << endl;
+                return;
+            }        
+        }    
+    }
     return;
 }
+
 void fs_write(char name[5], int block_num){
-    cout << "inside fs write, filename: "<< name << ",   block number: " << block_num << endl;
+    for(int i =0; i < 126; i++){
+        uint8_t parentDir = superBlock.inode[i].dir_parent;                                                             // perform same checks as fs_read
+        parentDir = parentDir << 1;
+        parentDir = parentDir >> 1;
+        if(currentDir == parentDir){ 
+            string inodeName = superBlock.inode[i].name;
+            inodeName = inodeName.substr(0,5);
+            uint8_t inUse = superBlock.inode[i].used_size;
+            inUse = inUse >> 7;
+            if(!inodeName.compare(name)){
+                uint8_t size = superBlock.inode[i].used_size;
+                size = size << 1;
+                size = size >> 1;
+                if(block_num > size){
+                    cerr << "Error: "<< name <<" does not have block " << block_num << endl;
+                    return;
+                }
+                if(inUse != 0){
+                    cerr << "Error: File " << name << " does not exist" << endl;    
+                    return;
+                }
+                uint8_t startBlock = superBlock.inode[i].start_block;
+                int writeBlock = startBlock + block_num;
+                if(writeBlock < 129){                                                                                   // if all checks passes then copy from the buffer and write from the disk
+                    infile.seekp(writeBlock*1024,ios::beg);
+                    char tempbuff[1024];
+                    memset(tempbuff,0,1024);
+                    memcpy(tempbuff,buffer,1024);
+                    infile.write(tempbuff,1024);
+                }
+            }
+            else {
+                cerr << "Error: File " << name << " does not exist" << endl;
+                return;
+            }        
+        }    
+    }
     return;
+    
 }
 
 
-void fs_buff(uint8_t buff[1024]){
-    cout << "inside fs buff, buff before: " << (char *)buff << endl;
+void fs_buff(uint8_t buff[1024]){                                                                                                   // clear current buffer and write on it
     memset(buffer, 0, 1024);
     memcpy(buffer, buff, 1024);
-    cout << "inside fs buff, buffer after: " << (char *)buffer << endl;
     return;
 }
 
@@ -397,13 +385,12 @@ void fs_defrag(void){
 }
 
 void fs_cd(char name[5]){
-    cout << "inside fs cd, filename: " << name << endl;
-    if(strcmp(name, ".") == 0){                                        // do nothing
+    if(strcmp(name, ".") == 0){                                                                                                         // do nothing
         return;
     }
     
-    if(strcmp(name, "..") == 0){                                       // got one directory back of the current directory only 
-        if(currentDir != 127){                                                    // if the current directory is not root
+    if(strcmp(name, "..") == 0){                                                                                                        // got one directory back of the current directory only 
+        if(currentDir != 127){                                                                                                          // if the current directory is not root
             uint8_t tempIndex = superBlock.inode[currentDir].dir_parent;
             currentDir = tempIndex << 1;
             currentDir = currentDir >> 1;
@@ -411,9 +398,11 @@ void fs_cd(char name[5]){
         }
             
     }
-    int index = -1;                                                             // if an actual dir name is given then go into that dir
+    int index = -1;                                                                                                                     // if an actual dir name is given then go into that dir
     for (int i = 0;i<126; i++){
-        if(strncmp(name,superBlock.inode[i].name,5)){
+        string inodeName = superBlock.inode[i].name;
+        inodeName = inodeName.substr(0,5);
+        if(!(inodeName.compare(name))){
             uint8_t tempIndex = superBlock.inode[i].dir_parent;
             int isDir = tempIndex >> 7;
             tempIndex = tempIndex << 1;
@@ -427,12 +416,17 @@ void fs_cd(char name[5]){
         currentDir = index;
     }
     else{
-        cout << "Error: Directory" << name << " does not exist" << endl;
+        cerr << "Error: Directory" << name << " does not exist" << endl;
     }
     return;
 }
 
-void changeDisk(){
+
+/**
+ * @brief write the whole superblock to the disk
+ * 
+  */
+void changeDisk(){                                                                                                                     
     infile.seekp(0, ios::beg);
     infile.write(superBlock.free_block_list, 16);
 
@@ -441,10 +435,6 @@ void changeDisk(){
         infile.write((char *)& superBlock.inode[i].used_size, 1);
         infile.write((char *)& superBlock.inode[i].start_block,1);
         infile.write((char *)& superBlock.inode[i].dir_parent,1);
-        // cout << "name " << (char *)superBlock.inode[i].name << endl;
-        // cout << "used_size " << unsigned(superBlock.inode[i].used_size) << endl;        
-        // cout << "start Block " << unsigned(superBlock.inode[i].start_block) << endl;
-        // cout << "dirparent " << unsigned(superBlock.inode[i].dir_parent) << endl;
     }
     
 }
@@ -473,6 +463,15 @@ vector<string> tokenize(const string &str, const char *delim) {
   return tokens;
 }
 
+
+/**
+ * @brief find the value of the specific bit in a byte 
+ * 
+ * @param uint8_t - The byte to check
+ * @param int - the index of the bit to check
+ * @return int 1/0
+ */
+
 int findBit(uint8_t byteFlag, int whichBit)
 {
     if (whichBit > 0 && whichBit <= 8){
@@ -480,9 +479,17 @@ int findBit(uint8_t byteFlag, int whichBit)
             return 1;
         }
     }
-    else
-        return 0;
+   return 0;
 }
+
+/**
+ * @brief converts a char array to a string 
+ * 
+ * @param char* - The array
+ * @param int - the size of the array
+ * @return string - the new string
+ */
+
 
 string convertToString(char* a, int size) 
 { 
@@ -494,22 +501,33 @@ string convertToString(char* a, int size)
     return s; 
 } 
 
+/**
+ * @brief does the consistency checks for fs mount
+ *          makes a temporary superblock and performs the checks on it
+ * 
+ * @param char* - The disk name
+ * @return bool - true if the tests pass or false
+ */
 
 bool fs_mountCheck(char *new_disk_name){
-    fstream infile;
-    infile.open(new_disk_name);
-    if(infile.fail()){
-        cout << "Error: Cannot find disk " << new_disk_name << endl;
+    fstream infile2;
+    infile2.open(new_disk_name);
+    if(infile2.fail()){
+        cerr << "Error: Cannot find disk " << new_disk_name << endl;
     }
     Super_block *S1 = new Super_block;
-    infile.read(S1->free_block_list,16);
+    infile2.read(S1->free_block_list,16);
     for(uint8_t i =0; i<126; i++){
-        infile.read((char*)&(S1->inode[i].name),5);
-        infile.read((char*)&(S1->inode[i].used_size),1);
-        infile.read((char*)&(S1->inode[i].start_block),1);
-        infile.read((char*)&(S1->inode[i].dir_parent),1);
+        infile2.read((char*)&(S1->inode[i].name),5);
+        infile2.read((char*)&(S1->inode[i].used_size),1);
+        infile2.read((char*)&(S1->inode[i].start_block),1);
+        infile2.read((char*)&(S1->inode[i].dir_parent),1);
     }
+    infile2.close();
 
+
+    // consistency check 1: Blocks that are marked free in the free-space list cannot be allocated to any file. Similarly, blocks
+    // marked in use in the free-space list must be allocated to exactly one file.
     int pos = 0;
     map<int, int> pos_map;
     for (int i = 0; i < 16; i++){                                                           // creating the map of position value pairs
@@ -536,7 +554,7 @@ bool fs_mountCheck(char *new_disk_name){
             size = size >> 1;
             for(int j=0; j < size; j++ ){
                 if((startBlock+j) > 127){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 4)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 4)" << endl;
                     return false;
                 }
                 int pos_bit = pos_map.find(startBlock + j)->second;
@@ -544,7 +562,7 @@ bool fs_mountCheck(char *new_disk_name){
                     pos_map.erase(startBlock + j);
                 }
                 if(pos_bit == 0){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 1)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 1)" << endl;
                     return false;
                 }
             }
@@ -554,7 +572,7 @@ bool fs_mountCheck(char *new_disk_name){
     pos_map.erase(0);                                                                           // erasing the initial bit in the free space as it will alsways be 1
     for(auto it = pos_map.begin(); it != pos_map.end(); it++){
         if(it->second == 1){
-            cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 1)" << endl;
+            cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 1)" << endl;
             return false;
         }
     }
@@ -577,7 +595,7 @@ bool fs_mountCheck(char *new_disk_name){
             auto ret = name_dirMap.equal_range(node_name);
             for(auto it = ret.first; it != ret.second; ++it){
                 if(it->second == dir_index){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 2)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 2)" << endl;
                     return false;
                 }
             }
@@ -599,12 +617,12 @@ bool fs_mountCheck(char *new_disk_name){
         if (inUse_bit == 0){                                                                        // not occupied
             for(int j=0; j<5; j++){                                                                 // check for name
                 if((int)temp.name[j] != 0){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 3)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 3)" << endl;
                     return false;  
                 }
             }
             if((temp.dir_parent != 0) || (temp.start_block != 0) || (temp.used_size != 0)){         // check for other shit
-                cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 3)" << endl;
+                cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 3)" << endl;
                 return false;
             }
         }
@@ -617,7 +635,7 @@ bool fs_mountCheck(char *new_disk_name){
                     }
                 }
                 if (name_flag == false){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 3)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 3)" << endl;
                     return false;
                 }
         }
@@ -635,7 +653,7 @@ bool fs_mountCheck(char *new_disk_name){
             if(isFile_bit == 0){                                                    // it's a file
                 uint8_t startB = temp.start_block;
                 if(startB < 1 || startB > 127){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 4)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 4)" << endl;
                     return false;
                 }
             }
@@ -651,11 +669,10 @@ bool fs_mountCheck(char *new_disk_name){
             uint8_t isDir_byte = temp.dir_parent;
             int isDir_bit = findBit(isDir_byte, 8);
             if(isDir_bit == 1){
-                cout << "is directory inode:" << i << endl;
                 uint8_t size = inUse_byte << 1;
                 size = size >> 1;
                 if(size != 0 || temp.start_block != 0){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 5)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 5)" << endl;
                     return false;
                 }
             }
@@ -673,7 +690,7 @@ bool fs_mountCheck(char *new_disk_name){
             parent_byte = parent_byte << 1;
             parent_byte = parent_byte >> 1;
             if(parent_byte == 126){
-                cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 6)" << endl;
+                cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 6)" << endl;
                 return false;
             }
             if(parent_byte >= 0 && parent_byte <= 125){
@@ -682,7 +699,7 @@ bool fs_mountCheck(char *new_disk_name){
                 uint8_t isDir_byte = S1->inode[parent_byte].dir_parent;
                 int isDir_bit = findBit(isDir_byte, 8);
                 if(inUse_bit2 != 1 || isDir_bit != 1){
-                    cout << "Error: File system in " << new_disk_name << " is inconsistent (error code: 6)" << endl;
+                    cerr << "Error: File system in " << new_disk_name << " is inconsistent (error code: 6)" << endl;
                     return false;
                 }
 
@@ -693,6 +710,15 @@ bool fs_mountCheck(char *new_disk_name){
     return true;
 
 }
+
+
+/**
+ * @brief finds the contaguious blocks in free disk space
+ * 
+ * @param int - The given size
+ * @return int - the index of the starting of the contagiuos block
+ */
+
 
 int findBlock(int requiredSize){
     int freeIndex = 0;
@@ -707,14 +733,95 @@ int findBlock(int requiredSize){
             else{
                 freeIndex++;
             }
+            
             if(freeIndex >= requiredSize){
-                foundindex = (i*8)+j;
-                foundindex -= requiredSize;
-                return foundindex;
+                if(i == 0){
+                    return j-requiredSize;
+                }
+                else {
+                    foundindex = (i*8)+j;
+                    foundindex -= requiredSize;
+                    return foundindex;    
+                }
             }
             mask = mask >> 1;
         }  
     }
     return foundindex;
 
+}
+
+
+/**
+ * @brief create a vector map of child inodes of the given directory
+ * 
+ * @param int - The index of the directory
+ * @return int - the index of the starting of the contagiuos block
+ */
+
+
+vector<int> fileDirectory(int directory){
+    vector<int> nodesDir;
+    for (int i=0; i < 126; i++){
+        uint8_t parent = superBlock.inode[i].dir_parent;
+        parent = parent << 1;
+        parent = parent >> 1;
+        if(parent == directory){
+            nodesDir.push_back(i);
+        }
+    }
+    return nodesDir;
+}
+
+
+/**
+ * @brief delete everything associates with the inode
+ * 
+ * @param int - The index of the inode
+ */
+
+void deleteInode(int index){
+    uint8_t isDir = superBlock.inode[index].dir_parent;
+    isDir = isDir >> 7;
+    
+    if(isDir == 1){
+        superBlock.inode[index].dir_parent = 0;
+        superBlock.inode[index].start_block = 0;
+        superBlock.inode[index].used_size = 0;
+        for (int i=0;i<5;i++){
+            superBlock.inode[index].name[i] = 0;
+        }
+    }
+    else {
+        uint8_t size = superBlock.inode[index].used_size;
+        size = size << 1;
+        size = size >> 1;
+        uint8_t startBlock = superBlock.inode[index].start_block;
+
+        for(int i = startBlock; i < startBlock+size; i++){
+            int byte_index = i / 8;
+            int bit = i % 8;
+            uint8_t byte = superBlock.free_block_list[byte_index];
+            uint8_t mask_shift = 7 - bit;
+            uint8_t mask = ~(1 << mask_shift);
+            uint8_t new_byte = byte & mask;
+            superBlock.free_block_list[byte_index] = new_byte;
+        }
+
+        superBlock.inode[index].dir_parent = 0;
+        superBlock.inode[index].start_block = 0;
+        superBlock.inode[index].used_size = 0;
+        for (int i=0;i<5;i++){
+            superBlock.inode[index].name[i] = 0;
+        }
+        for(int j=0; j< size;j++){
+            int writeBlock = startBlock +j;
+            infile.seekp(writeBlock*1024,ios::beg);
+            char tempBuff[1024];
+            memset(tempBuff,0,1024);
+            infile.write(tempBuff,1024);
+        }
+        changeDisk();
+    }
+    return;
 }
