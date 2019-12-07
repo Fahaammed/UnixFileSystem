@@ -370,17 +370,46 @@ void fs_buff(uint8_t buff[1024]){                                               
 
 
 void fs_ls(void){
-    cout << "inside fs ls " << endl;
+    vector<int> numberOfChildren = fileDirectory(currentDir);
+    printf("%-5s %3d \n", ".",(int) numberOfChildren.size());
+
+    uint8_t parentDir = superBlock.inode[currentDir].dir_parent;
+    parentDir = parentDir << 1;
+    parentDir = parentDir >> 1;
+    vector<int> parentsFile = fileDirectory(parentDir);
+    if(parentDir == 127){
+        printf("%-5s %3d \n", ".",(int) numberOfChildren.size());
+    }
+    else{
+        printf("%-5s %3d \n", "..",(int) numberOfChildren.size());
+    }
+    
+    for (int i=0; i< 126; i++){
+        uint8_t parentDir2 = superBlock.inode[i].dir_parent;
+        parentDir2 = parentDir2 << 1;
+        parentDir2 = parentDir2 >> 1;
+        if(parentDir2 == currentDir){
+            if(superBlock.inode[i].start_block == 0){
+                vector<int> dirCount = fileDirectory(parentDir2);
+                printf("%-5s %3d \n", superBlock.inode[i].name, (int)dirCount.size());
+            }
+            else{
+                printf("%-5s %3d \n", superBlock.inode[i].name, superBlock.inode[i].used_size & 0x7f);
+            }
+        }
+
+    }
+
     return;
 }
 
 void fs_resize(char name[5], int new_size){
-    cout << "inside fs resize, filename: " << name <<  ",    new size: " << new_size << endl;
+    //cout << "inside fs resize, filename: " << name <<  ",    new size: " << new_size << endl;
     return;
 }
 
 void fs_defrag(void){
-    cout << "inside fs defrag" << endl;
+    //cout << "inside fs defrag" << endl;
     return;
 }
 
@@ -821,7 +850,8 @@ void deleteInode(int index){
             memset(tempBuff,0,1024);
             infile.write(tempBuff,1024);
         }
-        changeDisk();
+        
     }
+    changeDisk();
     return;
 }
